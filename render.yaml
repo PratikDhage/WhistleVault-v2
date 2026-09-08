@@ -1,0 +1,64 @@
+# Render Blueprint for WhistleVault.
+# https://render.com/docs/blueprint-spec
+#
+# Usage: push this repo to GitHub, then in the Render dashboard choose
+# New -> Blueprint and point it at the repo. Render will read this file
+# and provision the web service below.
+#
+# Database: this project uses an EXTERNAL managed Postgres (Neon or
+# Supabase), not Render's own Postgres offering, so DATABASE_URL is
+# declared with `sync: false` -- you paste your Neon/Supabase connection
+# string into the Render dashboard after the first deploy attempt (it
+# will fail once until you do; that's expected, see README).
+#
+# Migrations: `flask db upgrade` runs as part of buildCommand rather
+# than a Render "Pre-Deploy Command" so this works on the Free plan --
+# Pre-Deploy Command is a paid-instance-type-only feature on Render.
+
+services:
+  - type: web
+    name: whistlevault
+    runtime: python
+    plan: free
+    region: oregon
+    branch: main
+    buildCommand: "pip install -r requirements.txt && flask --app app db upgrade"
+    startCommand: "gunicorn app:app --workers 4 --threads 2 --timeout 60 --bind 0.0.0.0:$PORT"
+    healthCheckPath: /health
+    envVars:
+      - key: FLASK_ENV
+        value: production
+      - key: SECRET_KEY
+        generateValue: true
+      - key: DATABASE_URL
+        sync: false
+      - key: SESSION_COOKIE_SECURE
+        value: "true"
+      - key: ADMIN_USERNAME
+        sync: false
+      - key: ADMIN_PASSWORD_HASH
+        sync: false
+      - key: MAIL_PROVIDER
+        value: console
+      - key: STORAGE_BACKEND
+        value: s3
+      - key: MEDIA_FOLDER
+        value: ./media
+      - key: S3_BUCKET
+        sync: false
+      - key: S3_REGION
+        sync: false
+      - key: S3_ACCESS_KEY
+        sync: false
+      - key: S3_SECRET_KEY
+        sync: false
+      - key: GROQ_API_KEY
+        sync: false
+      - key: GROQ_MODEL
+        value: openai/gpt-oss-20b
+      - key: RATELIMIT_STORAGE_URI
+        value: memory://
+      - key: DB_POOL_SIZE
+        value: "5"
+      - key: DB_MAX_OVERFLOW
+        value: "10"

@@ -1,0 +1,63 @@
+{% extends "base.html" %}
+{% block title %}Post — WhistleVault{% endblock %}
+
+{% block content %}
+<div class="max-w-3xl mx-auto" data-post-id="{{ post_id }}">
+
+  <a href="{{ url_for('main.feed') }}" class="text-sm text-vault-400 hover:text-vault-200 inline-flex items-center gap-1 mb-4">← Back to feed</a>
+
+  <article id="post-detail" class="bg-vault-900/60 border border-vault-800 rounded-xl p-6 mb-8">
+    <!-- injected by JS -->
+    <div class="animate-pulse space-y-3">
+      <div class="h-6 bg-vault-800 rounded w-3/4"></div>
+      <div class="h-4 bg-vault-800 rounded w-1/3"></div>
+      <div class="h-24 bg-vault-800 rounded"></div>
+    </div>
+  </article>
+
+  <section>
+    <h2 class="text-lg font-bold mb-4">Comments</h2>
+
+    <div id="comment-form-root" class="mb-6"></div>
+
+    <div id="comments-container" class="space-y-4"></div>
+    <div id="comments-empty" class="hidden text-center py-10 text-vault-500 text-sm">No comments yet. Start the discussion.</div>
+  </section>
+</div>
+
+<template id="comment-template">
+  <div class="comment-node">
+    <div class="bg-vault-900/40 border border-vault-800 rounded-lg p-4">
+      <div class="flex items-center justify-between mb-1.5">
+        <span class="text-xs font-medium text-vault-400 flex items-center gap-1.5">
+          <span class="comment-author">Anonymous</span>
+          <span class="op-badge hidden text-[10px] font-bold px-1.5 py-0.5 rounded bg-signal-500 text-vault-950">OP</span>
+        </span>
+        <span class="comment-time text-xs text-vault-600"></span>
+      </div>
+      <p class="comment-content text-sm text-vault-100 whitespace-pre-wrap break-words"></p>
+      <div class="mt-2 flex items-center gap-4 text-xs">
+        <button class="reply-btn text-vault-400 hover:text-vault-200 font-medium">Reply</button>
+        <button class="delete-comment-btn hidden text-rose-400 hover:text-rose-300 font-medium">Delete</button>
+      </div>
+      <div class="reply-form-slot mt-3 hidden"></div>
+    </div>
+    <div class="replies-container ml-5 mt-3 space-y-3 border-l border-vault-800 pl-4"></div>
+  </div>
+</template>
+
+<template id="comment-form-template">
+  <form class="comment-form flex flex-col gap-2">
+    <textarea class="comment-textarea w-full bg-vault-950 border border-vault-800 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-vault-500 resize-y"
+      rows="3" maxlength="3000" placeholder="Add a comment…" required></textarea>
+    <div class="flex gap-2">
+      <button type="submit" class="text-xs px-4 py-2 rounded-lg bg-signal-500 hover:bg-orange-500 text-vault-950 font-semibold">Post</button>
+      <button type="button" class="cancel-btn hidden text-xs px-4 py-2 rounded-lg border border-vault-700 hover:bg-vault-900">Cancel</button>
+    </div>
+  </form>
+</template>
+{% endblock %}
+
+{% block scripts %}
+<script src="{{ url_for('static', filename='js/post_detail.js') }}"></script>
+{% endblock %}

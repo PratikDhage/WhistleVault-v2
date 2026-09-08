@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html lang="en" class="h-full">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>{% block title %}WhistleVault{% endblock %}</title>
+  <meta name="description" content="Anonymous, secure whistleblowing platform.">
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            vault: {
+              50: '#f2f6fb', 100: '#e2eaf5', 200: '#c3d6ea', 300: '#94b6d8',
+              400: '#5f8fc0', 500: '#3c6da6', 600: '#2c5589', 700: '#254570',
+              800: '#213a5e', 900: '#1f334f', 950: '#141f33'
+            },
+            signal: { 500: '#d9762c' }
+          },
+          fontFamily: { sans: ['Inter', 'ui-sans-serif', 'system-ui'] }
+        }
+      }
+    }
+  </script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body class="h-full bg-vault-950 text-vault-50 font-sans antialiased flex flex-col min-h-screen">
+
+  <header class="border-b border-vault-800 bg-vault-950/95 backdrop-blur sticky top-0 z-40">
+    <nav class="max-w-6xl mx-auto px-4 sm:px-6 py-4 flex items-center justify-between">
+      <a href="{{ url_for('main.feed') }}" class="flex items-center gap-2 group">
+        <span class="w-9 h-9 rounded-lg bg-vault-600 flex items-center justify-center text-lg font-bold group-hover:bg-vault-500 transition-colors">🔒</span>
+        <span class="text-lg font-bold tracking-tight">Whistle<span class="text-signal-500">Vault</span></span>
+      </a>
+
+      <div class="hidden md:flex items-center gap-1 text-sm">
+        <a href="{{ url_for('main.feed') }}" class="px-3 py-2 rounded-md hover:bg-vault-900 transition-colors">Feed</a>
+        {% if session.get('user_id') %}
+          <a href="{{ url_for('posts.create') }}" class="px-3 py-2 rounded-md hover:bg-vault-900 transition-colors">Submit a Leak</a>
+          <a href="{{ url_for('main.dashboard') }}" class="px-3 py-2 rounded-md hover:bg-vault-900 transition-colors">Dashboard</a>
+        {% elif session.get('role') == 'admin' %}
+          <a href="{{ url_for('admin.dashboard') }}" class="px-3 py-2 rounded-md hover:bg-vault-900 transition-colors">Admin Panel</a>
+        {% endif %}
+      </div>
+
+      <div class="flex items-center gap-3">
+        {% if session.get('user_id') or session.get('role') == 'admin' %}
+          <span class="hidden sm:inline text-sm text-vault-300">Hi, {{ session.get('display_name') }}</span>
+          <form action="{{ url_for('auth.logout') }}" method="POST">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <button class="text-sm px-3 py-2 rounded-md border border-vault-700 hover:border-vault-500 hover:bg-vault-900 transition-colors">Log out</button>
+          </form>
+        {% else %}
+          <a href="{{ url_for('auth.login') }}" class="text-sm px-3 py-2 rounded-md hover:bg-vault-900 transition-colors">Log in</a>
+          <a href="{{ url_for('auth.signup') }}" class="text-sm px-4 py-2 rounded-md bg-signal-500 hover:bg-orange-500 font-semibold text-vault-950 transition-colors">Sign up</a>
+        {% endif %}
+      </div>
+    </nav>
+  </header>
+
+  <main class="flex-1 max-w-6xl w-full mx-auto px-4 sm:px-6 py-8">
+    {% with messages = get_flashed_messages(with_categories=true) %}
+      {% if messages %}
+        <div class="mb-6 space-y-2">
+          {% for category, message in messages %}
+            <div class="px-4 py-3 rounded-lg text-sm border {{ 'bg-emerald-500/10 border-emerald-500/40 text-emerald-300' if category == 'success' else 'bg-rose-500/10 border-rose-500/40 text-rose-300' }}">
+              {{ message }}
+            </div>
+          {% endfor %}
+        </div>
+      {% endif %}
+    {% endwith %}
+
+    {% block content %}{% endblock %}
+  </main>
+
+  <footer class="border-t border-vault-800 py-6 text-center text-xs text-vault-500">
+    WhistleVault &mdash; Your identity is never shown publicly. Submissions are reviewed only by moderators when necessary.
+  </footer>
+
+  <script>window.CSRF_TOKEN = "{{ csrf_token() }}";</script>
+  <script src="{{ url_for('static', filename='js/main.js') }}"></script>
+  {% block scripts %}{% endblock %}
+</body>
+</html>

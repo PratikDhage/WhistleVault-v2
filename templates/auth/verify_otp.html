@@ -1,0 +1,26 @@
+{% extends "base.html" %}
+{% block title %}Verify your email — WhistleVault{% endblock %}
+
+{% block content %}
+<div class="max-w-md mx-auto">
+  <h1 class="text-2xl font-bold mb-1">Verify your email</h1>
+  <p class="text-vault-400 text-sm mb-6">We sent a 6-digit code to <span class="text-vault-200">{{ email }}</span>.</p>
+
+  <form method="POST" action="{{ url_for('auth.verify_otp') }}" class="space-y-4 bg-vault-900/60 border border-vault-800 rounded-xl p-6">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+    <div>
+      <label class="block text-sm font-medium text-vault-300 mb-1.5">Verification code</label>
+      <input name="code" type="text" inputmode="numeric" pattern="[0-9]{6}" maxlength="6" required autofocus
+        class="w-full tracking-[0.5em] text-center text-lg bg-vault-950 border border-vault-800 rounded-lg px-3.5 py-2.5 focus:outline-none focus:ring-2 focus:ring-vault-500">
+    </div>
+    <button type="submit" class="w-full bg-signal-500 hover:bg-orange-500 text-vault-950 font-semibold rounded-lg py-2.5 transition-colors">
+      Verify
+    </button>
+  </form>
+
+  <form method="POST" action="{{ url_for('auth.resend_otp') }}" class="mt-4 text-center">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+    <button type="submit" class="text-sm text-vault-400 underline hover:text-vault-200">Resend code</button>
+  </form>
+</div>
+{% endblock %}

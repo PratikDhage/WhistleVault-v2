@@ -1,0 +1,36 @@
+{% extends "base.html" %}
+{% block title %}Dashboard — WhistleVault{% endblock %}
+
+{% block content %}
+<h1 class="text-3xl font-extrabold tracking-tight mb-6">Your Dashboard</h1>
+
+<section id="profile-card" class="grid sm:grid-cols-4 gap-4 mb-10">
+  <!-- injected -->
+</section>
+
+<div class="flex items-center justify-between mb-4">
+  <h2 class="text-xl font-bold">My Posts</h2>
+  <a href="{{ url_for('posts.create') }}" class="text-sm px-4 py-2 rounded-lg bg-signal-500 hover:bg-orange-500 text-vault-950 font-semibold">+ New Post</a>
+</div>
+
+<section id="my-posts-container" class="grid gap-4 sm:grid-cols-2"></section>
+<div id="my-posts-empty" class="hidden text-center py-16 text-vault-500">
+  You haven't posted anything yet.
+</div>
+<div class="flex justify-center mt-8">
+  <button id="my-posts-load-more" class="hidden px-5 py-2.5 rounded-lg border border-vault-700 text-sm hover:bg-vault-900 transition-colors">Load more</button>
+</div>
+
+<h2 class="text-xl font-bold mt-12 mb-4">🔖 Bookmarked Posts</h2>
+<section id="bookmarks-container" class="grid gap-4 sm:grid-cols-2"></section>
+<div id="bookmarks-empty" class="hidden text-center py-16 text-vault-500">
+  You haven't bookmarked anything yet.
+</div>
+<div class="flex justify-center mt-8">
+  <button id="bookmarks-load-more" class="hidden px-5 py-2.5 rounded-lg border border-vault-700 text-sm hover:bg-vault-900 transition-colors">Load more</button>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="{{ url_for('static', filename='js/dashboard.js') }}"></script>
+{% endblock %}

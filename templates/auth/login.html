@@ -1,0 +1,36 @@
+{% extends "base.html" %}
+{% block title %}Log in — WhistleVault{% endblock %}
+
+{% block content %}
+<div class="max-w-md mx-auto">
+  <h1 class="text-2xl font-bold mb-1">Welcome back</h1>
+  <p class="text-vault-400 text-sm mb-6">Log in to submit and manage your posts.</p>
+
+  <form method="POST" action="{{ url_for('auth.login') }}"
+    class="space-y-4 bg-vault-900/60 border border-vault-800 rounded-xl p-6">
+    <input type="hidden" name="next" value="{{ next }}">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+    <div>
+      <label class="block text-sm font-medium text-vault-300 mb-1.5">Username or email</label>
+      <input name="identifier" type="text" required autofocus
+        class="w-full bg-vault-950 border border-vault-800 rounded-lg px-3.5 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-vault-500">
+    </div>
+    <div>
+      <label class="block text-sm font-medium text-vault-300 mb-1.5">Password</label>
+      <input name="password" type="password" required
+        class="w-full bg-vault-950 border border-vault-800 rounded-lg px-3.5 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-vault-500">
+    </div>
+    <div class="text-right -mt-2">
+      <a href="{{ url_for('auth.forgot_password') }}" class="text-xs text-vault-300 underline">Forgot password?</a>
+    </div>
+    <button type="submit"
+      class="w-full bg-signal-500 hover:bg-orange-500 text-vault-950 font-semibold rounded-lg py-2.5 transition-colors">
+      Log in
+    </button>
+  </form>
+
+  <p class="text-center text-sm text-vault-400 mt-4">
+    New here? <a href="{{ url_for('auth.signup') }}" class="text-vault-200 underline">Create an account</a>
+  </p>
+</div>
+{% endblock %}

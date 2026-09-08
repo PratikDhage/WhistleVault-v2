@@ -1,0 +1,64 @@
+{% extends "base.html" %}
+{% block title %}Submit a Leak — WhistleVault{% endblock %}
+
+{% block content %}
+<div class="max-w-2xl mx-auto">
+  <h1 class="text-2xl font-bold mb-1">Submit anonymously</h1>
+  <p class="text-vault-400 text-sm mb-6">Your username is never attached to this post publicly. Be specific, be factual.</p>
+
+  <form id="create-form" method="POST" action="{{ url_for('posts.create') }}" enctype="multipart/form-data"
+    class="space-y-5 bg-vault-900/60 border border-vault-800 rounded-xl p-6">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+
+    <div>
+      <label class="block text-sm font-medium text-vault-300 mb-1.5">Title <span class="text-signal-500">*</span></label>
+      <input name="title" id="title-input" type="text" required minlength="5" maxlength="200" value="{{ title or '' }}"
+        placeholder="A clear, specific headline for what you're reporting"
+        class="w-full bg-vault-950 border border-vault-800 rounded-lg px-3.5 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-vault-500">
+    </div>
+
+    <div>
+      <label class="block text-sm font-medium text-vault-300 mb-1.5">What are you reporting? <span class="text-signal-500">*</span></label>
+      <textarea name="content" id="content-input" rows="8" required minlength="5" maxlength="10000"
+        placeholder="Describe what happened, when, and any evidence you have…"
+        class="w-full bg-vault-950 border border-vault-800 rounded-lg px-3.5 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-vault-500 resize-y">{{ content or '' }}</textarea>
+    </div>
+
+    <div class="flex items-center gap-3">
+      <button type="button" id="ai-check-btn" class="text-xs px-3 py-2 rounded-lg border border-vault-700 hover:border-vault-500 hover:bg-vault-900 transition-colors flex items-center gap-1.5">
+        ✨ Check with AI
+      </button>
+      <span id="ai-check-status" class="text-xs text-vault-500"></span>
+    </div>
+    <div id="ai-pii-warning" class="hidden text-xs bg-amber-500/10 border border-amber-500/40 text-amber-300 rounded-lg px-3.5 py-2.5"></div>
+
+    <div>
+      <label class="block text-sm font-medium text-vault-300 mb-1.5">Category</label>
+      <select name="category" id="category-select"
+        class="w-full bg-vault-950 border border-vault-800 rounded-lg px-3.5 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-vault-500">
+        <option value="">Auto (let AI decide)</option>
+        {% for c in categories %}
+          <option value="{{ c }}">{{ c }}</option>
+        {% endfor %}
+      </select>
+      <p id="ai-category-hint" class="text-xs text-vault-500 mt-1 hidden"></p>
+    </div>
+
+    <div>
+      <label class="block text-sm font-medium text-vault-300 mb-1.5">Attachments (optional, up to 3 images)</label>
+      <input name="attachments" id="attachments-input" type="file" accept=".png,.jpg,.jpeg,.gif,.webp" multiple
+        class="w-full text-sm text-vault-300 file:mr-3 file:py-2 file:px-4 file:rounded-lg file:border-0 file:bg-vault-700 file:text-white file:text-sm hover:file:bg-vault-600">
+      <p class="text-xs text-vault-500 mt-1">Images only, 8MB max each. Strip metadata from photos before uploading if identity matters to you.</p>
+      <div id="image-preview" class="grid grid-cols-3 gap-2 mt-3"></div>
+    </div>
+
+    <button type="submit" class="w-full bg-signal-500 hover:bg-orange-500 text-vault-950 font-semibold rounded-lg py-2.5 transition-colors">
+      Post anonymously
+    </button>
+  </form>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="{{ url_for('static', filename='js/create_post.js') }}"></script>
+{% endblock %}

@@ -1,0 +1,67 @@
+{% extends "base.html" %}
+{% block title %}WhistleVault — Anonymous Public Feed{% endblock %}
+
+{% block content %}
+<section class="mb-8">
+  <h1 class="text-3xl sm:text-4xl font-extrabold tracking-tight mb-2">Public Feed</h1>
+  <p class="text-vault-300 max-w-2xl">Every post here is anonymous by design. No usernames, no profiles &mdash; just information.</p>
+</section>
+
+<section class="flex flex-col sm:flex-row gap-3 mb-6">
+  <div class="relative flex-1">
+    <input id="search-input" type="text" placeholder="Search by title…"
+      class="w-full bg-vault-900 border border-vault-800 rounded-lg pl-10 pr-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-vault-500 placeholder:text-vault-500">
+    <span class="absolute left-3 top-1/2 -translate-y-1/2 text-vault-500">🔍</span>
+  </div>
+  <select id="category-select" class="bg-vault-900 border border-vault-800 rounded-lg px-3.5 py-2.5 text-sm text-vault-300 focus:outline-none focus:ring-2 focus:ring-vault-500">
+    <option value="">All categories</option>
+    {% for c in categories %}
+      <option value="{{ c }}">{{ c }}</option>
+    {% endfor %}
+  </select>
+  <div class="flex gap-2">
+    <button data-sort="recent" class="sort-btn px-4 py-2.5 rounded-lg text-sm font-medium bg-vault-600 text-white">Recent</button>
+    <button data-sort="trending" class="sort-btn px-4 py-2.5 rounded-lg text-sm font-medium bg-vault-900 border border-vault-800 text-vault-300 hover:bg-vault-800">🔥 Trending</button>
+  </div>
+</section>
+
+<section id="feed-container" class="grid gap-4 sm:grid-cols-2">
+  <!-- posts injected by JS -->
+</section>
+
+<div id="feed-empty" class="hidden text-center py-16 text-vault-500">
+  No posts found. Be the first to <a href="{{ url_for('auth.signup') if not session.get('user_id') else url_for('posts.create') }}" class="text-vault-300 underline">share something</a>.
+</div>
+
+<div class="flex justify-center mt-8">
+  <button id="load-more" class="hidden px-5 py-2.5 rounded-lg border border-vault-700 text-sm hover:bg-vault-900 transition-colors">Load more</button>
+</div>
+
+<template id="post-card-template">
+  <article class="post-card bg-vault-900/60 border border-vault-800 rounded-xl overflow-hidden flex flex-col hover:border-vault-600 transition-colors cursor-pointer">
+    <div class="card-thumb-wrap hidden">
+      <img class="card-thumb w-full h-40 object-cover border-b border-vault-800" alt="attachment">
+    </div>
+    <div class="p-5 flex flex-col flex-1">
+      <div class="flex items-center gap-2 mb-2">
+        <span class="card-category text-[10px] font-semibold uppercase tracking-wide px-2 py-1 rounded-full bg-vault-800 text-vault-300"></span>
+        <span class="card-status text-[10px] font-semibold uppercase tracking-wide px-2 py-1 rounded-full"></span>
+      </div>
+      <h3 class="card-title text-base font-bold text-vault-50 leading-snug mb-2"></h3>
+      <div class="mt-auto pt-3 flex items-center justify-between text-xs text-vault-500">
+        <span class="card-meta"></span>
+        <div class="flex items-center gap-3">
+          <span class="flex items-center gap-1">💬 <span class="card-comment-count">0</span></span>
+          <button class="upvote-btn flex items-center gap-1.5 px-3 py-1.5 rounded-full border text-xs font-semibold transition-colors bg-vault-950 border-vault-700 text-vault-300 hover:border-vault-500">
+            ▲ <span class="upvote-count">0</span>
+          </button>
+        </div>
+      </div>
+    </div>
+  </article>
+</template>
+{% endblock %}
+
+{% block scripts %}
+<script src="{{ url_for('static', filename='js/posts.js') }}"></script>
+{% endblock %}

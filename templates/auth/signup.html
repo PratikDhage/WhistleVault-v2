@@ -1,0 +1,46 @@
+{% extends "base.html" %}
+{% block title %}Sign up — WhistleVault{% endblock %}
+
+{% block content %}
+<div class="max-w-md mx-auto">
+  <h1 class="text-2xl font-bold mb-1">Create your account</h1>
+  <p class="text-vault-400 text-sm mb-6">Your account is used only for posting and moderation &mdash; it's never shown
+    to other users.</p>
+
+  <form method="POST" action="{{ url_for('auth.signup') }}"
+    class="space-y-4 bg-vault-900/60 border border-vault-800 rounded-xl p-6">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+    <div>
+      <label class="block text-sm font-medium text-vault-300 mb-1.5">Username</label>
+      <input name="username" type="text" required minlength="3" maxlength="32" value="{{ username or '' }}"
+        pattern="[a-zA-Z0-9_]{3,32}"
+        class="w-full bg-vault-950 border border-vault-800 rounded-lg px-3.5 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-vault-500">
+      <p data-availability="username" class="hidden text-xs mt-1"></p>
+    </div>
+    <div>
+      <label class="block text-sm font-medium text-vault-300 mb-1.5">Email</label>
+      <input name="email" type="email" required value="{{ email or '' }}"
+        class="w-full bg-vault-950 border border-vault-800 rounded-lg px-3.5 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-vault-500">
+      <p data-availability="email" class="hidden text-xs mt-1"></p>
+    </div>
+    <div>
+      <label class="block text-sm font-medium text-vault-300 mb-1.5">Password</label>
+      <input name="password" type="password" required minlength="8"
+        class="w-full bg-vault-950 border border-vault-800 rounded-lg px-3.5 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-vault-500">
+      <p class="text-xs text-vault-500 mt-1">At least 8 characters.</p>
+    </div>
+    <button type="submit"
+      class="w-full bg-signal-500 hover:bg-orange-500 text-vault-950 font-semibold rounded-lg py-2.5 transition-colors">
+      Create account
+    </button>
+  </form>
+
+  <p class="text-center text-sm text-vault-400 mt-4">
+    Already have an account? <a href="{{ url_for('auth.login') }}" class="text-vault-200 underline">Log in</a>
+  </p>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="{{ url_for('static', filename='js/signup.js') }}"></script>
+{% endblock %}
