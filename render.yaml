@@ -43,9 +43,9 @@ services:
       - key: MAIL_SERVER
         sync: false
       - key: MAIL_PORT
-        value: "587"
+        value: false
       - key: MAIL_USE_TLS
-        value: "true"
+        value: false
       - key: MAIL_USERNAME
         sync: false
       - key: MAIL_PASSWORD
@@ -53,7 +53,7 @@ services:
       - key: MAIL_DEFAULT_SENDER
         sync: false
       - key: MAIL_TIMEOUT_SECONDS
-        value: "8"
+        value: false
       - key: STORAGE_BACKEND
         value: s3
       - key: S3_BUCKET
