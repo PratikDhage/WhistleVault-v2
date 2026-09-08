@@ -84,6 +84,7 @@ class BaseConfig:
     MAIL_USERNAME = os.environ.get("MAIL_USERNAME", "")
     MAIL_PASSWORD = os.environ.get("MAIL_PASSWORD", "")
     MAIL_DEFAULT_SENDER = os.environ.get("MAIL_DEFAULT_SENDER", "no-reply@whistlevault.local")
+    MAIL_TIMEOUT_SECONDS = int(os.environ.get("MAIL_TIMEOUT_SECONDS", 8))
 
     # --- Uploads ---
     MEDIA_FOLDER = os.environ.get("MEDIA_FOLDER", os.path.join(basedir, "media"))

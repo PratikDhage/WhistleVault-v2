@@ -9,6 +9,7 @@ without touching calling code -- that's the point of the abstraction.
 """
 import logging
 import smtplib
+import threading
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
 
@@ -32,7 +33,7 @@ class EmailService:
             f"This code expires in {self._config('OTP_EXPIRY_MINUTES', 10)} minutes. "
             "If you did not request this, you can safely ignore this email."
         )
-        self._dispatch(to_email, subject, body)
+        self._dispatch_async(to_email, subject, body)
 
     def send_password_reset_email(self, to_email: str, reset_url: str):
         subject = "Reset your WhistleVault password"
@@ -42,7 +43,20 @@ class EmailService:
             f"This link expires in {self._config('PASSWORD_RESET_EXPIRY_MINUTES', 30)} minutes. "
             "If you did not request this, you can safely ignore this email."
         )
-        self._dispatch(to_email, subject, body)
+        self._dispatch_async(to_email, subject, body)
+
+    def _dispatch_async(self, to_email, subject, body):
+        """Queue delivery so SMTP latency never blocks a user request."""
+        app = self.app
+
+        def deliver():
+            try:
+                with app.app_context():
+                    self._dispatch(to_email, subject, body)
+            except Exception:
+                logger.exception("Background email delivery failed for %s", to_email)
+
+        threading.Thread(target=deliver, name="whistlevault-mail", daemon=True).start()
 
     def _dispatch(self, to_email, subject, body):
         provider = self._config("MAIL_PROVIDER", "console")
@@ -71,7 +85,11 @@ class EmailService:
         use_tls = self._config("MAIL_USE_TLS", True)
 
         try:
-            with smtplib.SMTP(server, port, timeout=10) as smtp:
+            with smtplib.SMTP(
+                server,
+                port,
+                timeout=self._config("MAIL_TIMEOUT_SECONDS", 8),
+            ) as smtp:
                 if use_tls:
                     smtp.starttls()
                 if username and password:
