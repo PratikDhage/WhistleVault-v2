@@ -25,7 +25,7 @@ services:
       - key: PASSWORD_RESET_EXPIRY_MINUTES
         value: "30"
       - key: MAIL_PROVIDER
-        value: "smtp"
+        value: "sendgrid_api"
       - key: MAIL_SERVER
         sync: false
       - key: MAIL_PORT

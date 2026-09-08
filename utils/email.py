@@ -1,17 +1,17 @@
 """
 Email service abstraction.
 
-In development / when MAIL_PROVIDER=console, OTPs are just logged to the
-server console so the app is fully runnable with zero external services.
-Swap MAIL_PROVIDER=smtp and fill in MAIL_* env vars to send real email
-through any standard SMTP provider (SendGrid, SES, Mailgun, Gmail, etc.)
-without touching calling code -- that's the point of the abstraction.
+In development / when MAIL_PROVIDER=console, OTPs are logged to the console.
+Set MAIL_PROVIDER=sendgrid_api (recommended on Render) to send via SendGrid's
+v3 HTTP REST API over port 443, bypassing Render's outbound SMTP port blocks.
+Set MAIL_PROVIDER=smtp for traditional SMTP servers.
 """
 import logging
 import smtplib
 import threading
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
+import requests
 
 logger = logging.getLogger("whistlevault.mail")
 
@@ -46,7 +46,7 @@ class EmailService:
         self._dispatch_async(to_email, subject, body)
 
     def _dispatch_async(self, to_email, subject, body):
-        """Queue delivery so SMTP latency never blocks a user request."""
+        """Queue delivery so email latency never blocks a user request."""
         app = self.app
 
         def deliver():
@@ -60,7 +60,9 @@ class EmailService:
 
     def _dispatch(self, to_email, subject, body):
         provider = self._config("MAIL_PROVIDER", "console")
-        if provider == "smtp":
+        if provider == "sendgrid_api":
+            self._send_sendgrid_api(to_email, subject, body)
+        elif provider == "smtp":
             self._send_smtp(to_email, subject, body)
         else:
             self._send_console(to_email, subject, body)
@@ -71,6 +73,40 @@ class EmailService:
             to_email, subject, body,
         )
 
+    def _send_sendgrid_api(self, to_email, subject, body):
+        """Sends email via SendGrid v3 REST API (HTTPS port 443)."""
+        api_key = self._config("MAIL_PASSWORD")
+        sender = self._config("MAIL_DEFAULT_SENDER")
+        timeout = int(self._config("MAIL_TIMEOUT_SECONDS", 8))
+
+        if not api_key or not sender:
+            logger.error("SendGrid API error: MAIL_PASSWORD (API Key) or MAIL_DEFAULT_SENDER not configured.")
+            self._send_console(to_email, subject, body)
+            return
+
+        url = "https://api.sendgrid.com/v3/mail/send"
+        headers = {
+            "Authorization": f"Bearer {api_key}",
+            "Content-Type": "application/json",
+        }
+        payload = {
+            "personalizations": [{"to": [{"email": to_email}]}],
+            "from": {"email": sender},
+            "subject": subject,
+            "content": [{"type": "text/plain", "value": body}],
+        }
+
+        try:
+            resp = requests.post(url, headers=headers, json=payload, timeout=timeout)
+            if resp.status_code == 202:
+                logger.info("Email successfully sent via SendGrid API to %s", to_email)
+            else:
+                logger.error("SendGrid API rejected delivery [%s]: %s", resp.status_code, resp.text)
+                self._send_console(to_email, subject, body)
+        except Exception:
+            logger.exception("SendGrid HTTP API request failed for %s -- falling back to console", to_email)
+            self._send_console(to_email, subject, body)
+
     def _send_smtp(self, to_email, subject, body):
         msg = MIMEMultipart()
         msg["From"] = self._config("MAIL_DEFAULT_SENDER")
@@ -79,7 +115,7 @@ class EmailService:
         msg.attach(MIMEText(body, "plain"))
 
         server = self._config("MAIL_SERVER")
-        port = self._config("MAIL_PORT")
+        port = int(self._config("MAIL_PORT", 587))
         username = self._config("MAIL_USERNAME")
         password = self._config("MAIL_PASSWORD")
         use_tls = self._config("MAIL_USE_TLS", True)
@@ -88,13 +124,14 @@ class EmailService:
             with smtplib.SMTP(
                 server,
                 port,
-                timeout=self._config("MAIL_TIMEOUT_SECONDS", 8),
+                timeout=int(self._config("MAIL_TIMEOUT_SECONDS", 8)),
             ) as smtp:
                 if use_tls:
                     smtp.starttls()
                 if username and password:
                     smtp.login(username, password)
                 smtp.sendmail(msg["From"], [to_email], msg.as_string())
+                logger.info("Email successfully sent via SMTP to %s", to_email)
         except Exception:
             logger.exception("Failed to send SMTP email to %s -- falling back to console log", to_email)
             self._send_console(to_email, subject, body)
