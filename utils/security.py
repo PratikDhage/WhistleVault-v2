@@ -3,11 +3,23 @@ Cross-cutting security helpers: secure HTTP headers, session-based auth
 decorators, and RBAC enforcement.
 """
 from functools import wraps
-from flask import session, redirect, url_for, request, jsonify, abort
+from urllib.parse import urlsplit
+from flask import current_app, session, redirect, url_for, request, jsonify, abort
 
 
 def apply_secure_headers(response):
     """Attach standard hardening headers to every response."""
+    image_sources = ["'self'", "data:", "blob:"]
+    storage_endpoint = current_app.config.get("S3_ENDPOINT", "")
+    if storage_endpoint:
+        endpoint = urlsplit(storage_endpoint)
+        if endpoint.netloc:
+            image_sources.append(f"https://{endpoint.netloc}")
+            if endpoint.netloc.endswith(".storage.supabase.co"):
+                image_sources.append(
+                    f"https://{endpoint.netloc.replace('.storage.supabase.co', '.supabase.co')}"
+                )
+
     response.headers["X-Content-Type-Options"] = "nosniff"
     response.headers["X-Frame-Options"] = "DENY"
     response.headers["Referrer-Policy"] = "strict-origin-when-cross-origin"
@@ -20,7 +32,7 @@ def apply_secure_headers(response):
         "default-src 'self'; "
         "script-src 'self' https://cdn.tailwindcss.com 'unsafe-inline'; "
         "style-src 'self' https://cdn.tailwindcss.com 'unsafe-inline'; "
-        "img-src 'self' data: blob:; "
+        f"img-src {' '.join(image_sources)}; "
         "font-src 'self' data:; "
         "connect-src 'self'; "
         "frame-ancestors 'none'; "

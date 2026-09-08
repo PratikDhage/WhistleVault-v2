@@ -1,5 +1,6 @@
 import os
 import uuid
+from urllib.parse import urlsplit, urlunsplit
 from werkzeug.utils import secure_filename
 from botocore.config import Config
 from botocore.exceptions import ClientError
@@ -98,9 +99,11 @@ class S3Storage:
     def url_for(self, key: str, expires_in=3600) -> str:
         # If using Supabase Storage, route directly to the public object URL
         if "supabase.co" in self.endpoint:
-            base_url = self.endpoint
-            if base_url.endswith("/storage/v1/s3"):
-                base_url = base_url[:-len("/storage/v1/s3")]
+            parsed = urlsplit(self.endpoint)
+            host = parsed.netloc
+            if host.endswith(".storage.supabase.co"):
+                host = host.replace(".storage.supabase.co", ".supabase.co")
+            base_url = urlunsplit((parsed.scheme, host, "", "", ""))
             return f"{base_url}/storage/v1/object/public/{self.bucket}/{key}"
 
         # Standard S3 / R2 presigned URL generation
