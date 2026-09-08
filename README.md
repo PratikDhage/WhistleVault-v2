@@ -73,7 +73,7 @@ The administrator dashboard provides:
 - User deactivation.
 - Permanent post removal with media cleanup.
 
-### Optional AI assistance
+### AI assistance
 
 When `GROQ_API_KEY` is configured, Groq is used for:
 
@@ -85,6 +85,11 @@ AI is best-effort. It does not block a post when unavailable, times out, or
 returns invalid data. Names and organization names are allowed; the prompt is
 intended to identify phone numbers, email addresses, addresses, government IDs,
 bank or account numbers, license plates, passwords, and access tokens.
+
+## System Architecture
+
+![WhistleVault System Architecture](whistlevault_architecture.svg)
+
 
 ## Technology
 
