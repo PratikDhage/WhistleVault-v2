@@ -1,17 +1,3 @@
-# Render Blueprint for WhistleVault.
-# https://render.com/docs/blueprint-spec
-#
-# Usage: push this repo to GitHub, then in the Render dashboard choose
-# New -> Blueprint and point it at the repo. Render will read this file
-# and provision the web service below.
-#
-# Database: this project uses an external managed PostgreSQL database.
-# Set DATABASE_URL to the connection string from Neon in the Render
-# environment settings.
-#
-# Migrations run as part of buildCommand so the schema is updated before
-# the web service starts.
-
 services:
   - type: web
     name: whistlevault
@@ -20,7 +6,7 @@ services:
     region: oregon
     branch: main
     buildCommand: "pip install -r requirements.txt && flask --app app db upgrade"
-    startCommand: "gunicorn app:app --workers 4 --threads 2 --timeout 60 --bind 0.0.0.0:$PORT"
+    startCommand: "gunicorn app:app --workers 1 --threads 2 --timeout 60 --bind 0.0.0.0:$PORT"
     healthCheckPath: /health
     autoDeploy: true
     envVars:
@@ -39,21 +25,21 @@ services:
       - key: PASSWORD_RESET_EXPIRY_MINUTES
         value: "30"
       - key: MAIL_PROVIDER
-        value: false
+        value: "smtp"
       - key: MAIL_SERVER
         sync: false
       - key: MAIL_PORT
-        value: false
+        value: "587"
       - key: MAIL_USE_TLS
-        value: false
+        value: "true"
       - key: MAIL_USERNAME
-        sync: false
+        value: "apikey"
       - key: MAIL_PASSWORD
         sync: false
       - key: MAIL_DEFAULT_SENDER
         sync: false
       - key: MAIL_TIMEOUT_SECONDS
-        value: false
+        value: "8"
       - key: STORAGE_BACKEND
         value: s3
       - key: S3_BUCKET
