@@ -164,13 +164,38 @@ class Post(db.Model):
         }
 
     def to_detail_dict(self, viewer_id=None):
+        from flask import current_app, url_for
         from utils.storage import get_storage
-        storage = get_storage(current_app)
+        from models import Bookmark  # import Bookmark directly to query safely
 
-        image_urls = [
-            storage.url_for(img.image_path)
-            for img in sorted(self.images, key=lambda x: x.position)
-        ]
+        # Safe image URL generation
+        image_urls = []
+        try:
+            storage = get_storage(current_app)
+            backend = current_app.config.get("STORAGE_BACKEND", "local")
+            for img in sorted(self.images, key=lambda x: getattr(x, "position", 0)):
+                if backend == "s3":
+                    image_urls.append(storage.url_for(img.image_path))
+                else:
+                    image_urls.append(url_for("posts.media", filename=img.image_path))
+        except Exception:
+            current_app.logger.exception("Failed to build image URLs for post %s", self.id)
+
+        # Safe bookmark check (queries Bookmark model directly instead of self.bookmarks)
+        bookmarked = False
+        if viewer_id:
+            try:
+                bookmarked = Bookmark.query.filter_by(user_id=viewer_id, post_id=self.id).first() is not None
+            except Exception:
+                bookmarked = False
+
+        # Safe upvote check
+        upvoted = False
+        if viewer_id:
+            try:
+                upvoted = any(u.user_id == viewer_id for u in self.upvotes)
+            except Exception:
+                upvoted = False
 
         return {
             "id": self.id,
@@ -179,11 +204,11 @@ class Post(db.Model):
             "category": self.category,
             "status": getattr(self, "status", "open"),
             "image_urls": image_urls,
-            "created_at": self.created_at.isoformat() + "Z",
-            "view_count": self.view_count,
-            "upvotes": self.upvote_count,
-            "upvoted_by_viewer": any(u.user_id == viewer_id for u in self.upvotes) if viewer_id else False,
-            "bookmarked_by_viewer": any(b.user_id == viewer_id for b in self.bookmarks) if viewer_id else False,
+            "created_at": self.created_at.isoformat() + "Z" if hasattr(self.created_at, "isoformat") else str(self.created_at),
+            "view_count": getattr(self, "view_count", 0),
+            "upvotes": getattr(self, "upvote_count", 0),
+            "upvoted_by_viewer": upvoted,
+            "bookmarked_by_viewer": bookmarked,
         }
 
     def to_admin_dict(self):
