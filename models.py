@@ -164,16 +164,27 @@ class Post(db.Model):
         }
 
     def to_detail_dict(self, viewer_id=None):
-        """Full anonymous detail view -- post page, still no author identity."""
-        d = self.to_feed_dict(viewer_id=viewer_id)
-        d["content"] = self.content
-        d["image_urls"] = [img.image_url for img in self.images]
-        d["bookmarked_by_viewer"] = (
-            viewer_id is not None
-            and self.bookmark_records.filter_by(user_id=viewer_id).first() is not None
-        )
-        d.pop("thumbnail_url", None)
-        return d
+        from utils.storage import get_storage
+        storage = get_storage(current_app)
+
+        image_urls = [
+            storage.url_for(img.image_path)
+            for img in sorted(self.images, key=lambda x: x.position)
+        ]
+
+        return {
+            "id": self.id,
+            "title": self.title,
+            "content": self.content,
+            "category": self.category,
+            "status": getattr(self, "status", "open"),
+            "image_urls": image_urls,
+            "created_at": self.created_at.isoformat() + "Z",
+            "view_count": self.view_count,
+            "upvotes": self.upvote_count,
+            "upvoted_by_viewer": any(u.user_id == viewer_id for u in self.upvotes) if viewer_id else False,
+            "bookmarked_by_viewer": any(b.user_id == viewer_id for b in self.bookmarks) if viewer_id else False,
+        }
 
     def to_admin_dict(self):
         """Includes author identity and moderation signals -- admin use ONLY."""
