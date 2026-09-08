@@ -5,15 +5,12 @@
 # New -> Blueprint and point it at the repo. Render will read this file
 # and provision the web service below.
 #
-# Database: this project uses an EXTERNAL managed Postgres (Neon or
-# Supabase), not Render's own Postgres offering, so DATABASE_URL is
-# declared with `sync: false` -- you paste your Neon/Supabase connection
-# string into the Render dashboard after the first deploy attempt (it
-# will fail once until you do; that's expected, see README).
+# Database: this project uses an external managed PostgreSQL database.
+# Set DATABASE_URL to the connection string from Neon in the Render
+# environment settings.
 #
-# Migrations: `flask db upgrade` runs as part of buildCommand rather
-# than a Render "Pre-Deploy Command" so this works on the Free plan --
-# Pre-Deploy Command is a paid-instance-type-only feature on Render.
+# Migrations run as part of buildCommand so the schema is updated before
+# the web service starts.
 
 services:
   - type: web
@@ -25,6 +22,7 @@ services:
     buildCommand: "pip install -r requirements.txt && flask --app app db upgrade"
     startCommand: "gunicorn app:app --workers 4 --threads 2 --timeout 60 --bind 0.0.0.0:$PORT"
     healthCheckPath: /health
+    autoDeploy: true
     envVars:
       - key: FLASK_ENV
         value: production
@@ -38,15 +36,29 @@ services:
         sync: false
       - key: ADMIN_PASSWORD_HASH
         sync: false
+      - key: PASSWORD_RESET_EXPIRY_MINUTES
+        value: "30"
       - key: MAIL_PROVIDER
-        value: console
+        value: smtp
+      - key: MAIL_SERVER
+        sync: false
+      - key: MAIL_PORT
+        value: "587"
+      - key: MAIL_USE_TLS
+        value: "true"
+      - key: MAIL_USERNAME
+        sync: false
+      - key: MAIL_PASSWORD
+        sync: false
+      - key: MAIL_DEFAULT_SENDER
+        sync: false
       - key: STORAGE_BACKEND
         value: s3
-      - key: MEDIA_FOLDER
-        value: ./media
       - key: S3_BUCKET
         sync: false
       - key: S3_REGION
+        sync: false
+      - key: S3_ENDPOINT
         sync: false
       - key: S3_ACCESS_KEY
         sync: false
@@ -56,6 +68,8 @@ services:
         sync: false
       - key: GROQ_MODEL
         value: openai/gpt-oss-20b
+      - key: OTP_EXPIRY_MINUTES
+        value: "10"
       - key: RATELIMIT_STORAGE_URI
         value: memory://
       - key: DB_POOL_SIZE

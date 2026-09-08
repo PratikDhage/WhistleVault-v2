@@ -111,7 +111,7 @@ settings include:
 | `ADMIN_USERNAME` | Admin login name |
 | `ADMIN_PASSWORD_HASH` | Hashed admin password |
 | `STORAGE_BACKEND` | `s3` for durable media or `local` for local testing |
-| `S3_BUCKET`, `S3_REGION`, `S3_ACCESS_KEY`, `S3_SECRET_KEY` | S3-compatible media storage |
+| `S3_BUCKET`, `S3_REGION`, `S3_ENDPOINT`, `S3_ACCESS_KEY`, `S3_SECRET_KEY` | S3-compatible media storage |
 | `MAIL_PROVIDER` | `console` or `smtp` |
 | `GROQ_API_KEY` | Optional AI features; blank disables AI calls |
 | `RATELIMIT_STORAGE_URI` | Rate-limit backend; use shared Redis when scaling instances |

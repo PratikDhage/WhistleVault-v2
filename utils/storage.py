@@ -49,12 +49,13 @@ class LocalStorage:
 class S3Storage:
     """Thin wrapper -- requires boto3 to be installed and S3_* env vars set."""
 
-    def __init__(self, bucket, region, access_key, secret_key):
+    def __init__(self, bucket, region, endpoint, access_key, secret_key):
         import boto3
         self.bucket = bucket
         self.client = boto3.client(
             "s3",
             region_name=region,
+            endpoint_url=endpoint or None,
             aws_access_key_id=access_key,
             aws_secret_access_key=secret_key,
         )
@@ -86,6 +87,7 @@ def get_storage(app):
         return S3Storage(
             bucket=app.config["S3_BUCKET"],
             region=app.config["S3_REGION"],
+            endpoint=app.config.get("S3_ENDPOINT", ""),
             access_key=app.config["S3_ACCESS_KEY"],
             secret_key=app.config["S3_SECRET_KEY"],
         )
