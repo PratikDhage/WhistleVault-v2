@@ -44,6 +44,9 @@ class S3Storage:
     def __init__(self, bucket, region, endpoint, access_key, secret_key):
         import boto3
 
+        if not bucket or not access_key or not secret_key:
+            raise StorageError("S3_BUCKET, S3_ACCESS_KEY, and S3_SECRET_KEY are required.")
+
         self.bucket = bucket
         
         # Required for Supabase S3 compatibility: path-style addressing and s3v4 signature
@@ -79,14 +82,14 @@ class S3Storage:
                 ExtraArgs={"ContentType": content_type},
             )
             return key
-        except ClientError as exc:
-            raise StorageError(f"S3 upload failed: {exc}") from exc
+        except Exception as exc:
+            raise StorageError("S3 upload failed.") from exc
 
     def delete(self, key: str):
         try:
             self.client.delete_object(Bucket=self.bucket, Key=key)
-        except ClientError as exc:
-            raise StorageError(f"S3 deletion failed: {exc}") from exc
+        except Exception as exc:
+            raise StorageError("S3 deletion failed.") from exc
 
     def url_for(self, key: str, expires_in=3600) -> str:
         try:
@@ -95,8 +98,8 @@ class S3Storage:
                 Params={"Bucket": self.bucket, "Key": key},
                 ExpiresIn=expires_in,
             )
-        except ClientError as exc:
-            raise StorageError(f"Failed to generate presigned URL: {exc}") from exc
+        except Exception as exc:
+            raise StorageError("Failed to generate a presigned image URL.") from exc
 
 
 def get_storage(app):

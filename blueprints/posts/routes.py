@@ -82,6 +82,7 @@ def create():
     if len(content) > MAX_CONTENT_LENGTH:
         errors.append(f"Post is too long ({MAX_CONTENT_LENGTH} character max).")
 
+    # Retrieve files from 'attachments'
     files = [f for f in request.files.getlist("attachments") if f and f.filename]
     if len(files) > MAX_IMAGES_PER_POST:
         errors.append(f"You can attach at most {MAX_IMAGES_PER_POST} images.")
@@ -96,9 +97,7 @@ def create():
             "posts/create.html", categories=POST_CATEGORIES, title=title, content=content
         ), 400
 
-    # Server-side AI moderation pass (independent of any client-side
-    # "Check with AI" call, which is only ever a UX convenience -- never
-    # trusted for the actual flag stored against the post).
+    # Server-side AI moderation pass
     analysis = analyze_post(current_app, title, content)
     final_category = chosen_category if chosen_category in POST_CATEGORIES else analysis.category
 
@@ -113,13 +112,35 @@ def create():
     db.session.add(post)
     db.session.flush()  # assigns post.id before saving images
 
-    storage = get_storage(current_app)
-    for position, f in enumerate(files):
+    if files:
         try:
-            key = storage.save(f)
-            db.session.add(PostImage(post_id=post.id, image_path=key, position=position))
-        except StorageError:
-            flash("One or more attachments could not be saved.", "error")
+            storage = get_storage(current_app)
+        except Exception:
+            db.session.rollback()
+            current_app.logger.exception("Storage configuration is invalid")
+            flash("Image storage is not configured correctly. Please try again later.", "error")
+            return render_template(
+                "posts/create.html", categories=POST_CATEGORIES, title=title, content=content
+            ), 503
+
+        saved_keys = []
+        for position, f in enumerate(files):
+            try:
+                key = storage.save(f)
+                saved_keys.append(key)
+                db.session.add(PostImage(post_id=post.id, image_path=key, position=position))
+            except (StorageError, Exception):
+                db.session.rollback()
+                for saved_key in saved_keys:
+                    try:
+                        storage.delete(saved_key)
+                    except Exception:
+                        current_app.logger.exception("Failed to clean up uploaded image: %s", saved_key)
+                current_app.logger.exception("Post image upload failed for file: %s", f.filename)
+                flash("The image could not be uploaded. Check storage configuration and try again.", "error")
+                return render_template(
+                    "posts/create.html", categories=POST_CATEGORIES, title=title, content=content
+                ), 503
 
     db.session.commit()
 
@@ -135,10 +156,8 @@ def create():
 @limiter.limit("15 per hour")
 def api_analyze():
     """
-    Live, pre-submit "Check with AI" button on the create-post page.
-    Returns a category suggestion and a PII heads-up only -- the
-    moderation flag itself is never exposed to the submitter (it's
-    recomputed independently server-side at actual submit time).
+    Live, pre-submit 'Check with AI' button on the create-post page.
+    Returns a category suggestion and a PII heads-up only.
     """
     data = request.get_json(silent=True) or {}
     title = (data.get("title") or "").strip()
@@ -169,8 +188,6 @@ def detail(post_id):
 def api_detail(post_id):
     post = Post.query.filter_by(id=post_id, is_deleted=False).first_or_404()
 
-    # Dedup view-count increments per browser session so refreshing
-    # doesn't inflate the number; caps the tracked list to stay small.
     viewed = session.get("viewed_post_ids", [])
     if post_id not in viewed:
         post.view_count += 1
@@ -261,7 +278,7 @@ def bookmarked():
     uid = _current_user_id()
     pagination = (
         Post.query.join(Bookmark, Bookmark.post_id == Post.id)
-        .filter(Bookmark.user_id == uid, Post.is_deleted == False)  # noqa: E712
+        .filter(Bookmark.user_id == uid, Post.is_deleted == False)
         .order_by(Bookmark.created_at.desc())
         .paginate(page=page, per_page=current_app.config["POSTS_PER_PAGE"], error_out=False)
     )
@@ -349,7 +366,11 @@ def delete_own(post_id):
 
     storage = get_storage(current_app)
     for image in post.images:
-        storage.delete(image.image_path)
+        try:
+            storage.delete(image.image_path)
+        except Exception:
+            current_app.logger.exception("Failed to delete media file: %s", image.image_path)
+            
     db.session.delete(post)
     db.session.commit()
     flash("Post deleted.", "success")
@@ -360,8 +381,7 @@ def delete_own(post_id):
 def media(filename):
     """
     Serves locally-stored attachments. Filenames are randomly generated
-    UUIDs at upload time (see utils/storage.py), so they carry no author
-    or content-identifying information themselves.
+    UUIDs at upload time.
     """
     if current_app.config.get("STORAGE_BACKEND") != "local":
         abort(404)
