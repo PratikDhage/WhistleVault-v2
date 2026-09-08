@@ -116,6 +116,11 @@ settings include:
 | `GROQ_API_KEY` | Optional AI features; blank disables AI calls |
 | `RATELIMIT_STORAGE_URI` | Rate-limit backend; use shared Redis when scaling instances |
 
+For Supabase Storage, set `S3_ENDPOINT` to
+`https://PROJECT_REF.storage.supabase.co/storage/v1/s3`, use the exact bucket
+name in `S3_BUCKET`, and use Supabase S3 access-key credentials rather than the
+Supabase database password or anon key.
+
 ## Database migrations
 
 The schema is managed with Flask-Migrate and Alembic. Do not edit the database

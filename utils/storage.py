@@ -37,6 +37,9 @@ class LocalStorage:
     def path_for(self, key: str) -> str:
         return os.path.join(self.media_folder, key)
 
+    def url_for(self, key: str, **kwargs) -> str:
+        return f"/posts/media/{key}"
+
 
 class S3Storage:
     """S3 wrapper configured for Supabase Storage, AWS S3, or Cloudflare R2."""
@@ -48,7 +51,8 @@ class S3Storage:
             raise StorageError("S3_BUCKET, S3_ACCESS_KEY, and S3_SECRET_KEY are required.")
 
         self.bucket = bucket
-        
+        self.endpoint = (endpoint or "").rstrip("/")
+
         # Required for Supabase S3 compatibility: path-style addressing and s3v4 signature
         config = Config(
             signature_version="s3v4",
@@ -59,7 +63,7 @@ class S3Storage:
         self.client = boto3.client(
             "s3",
             region_name=region or "us-east-1",
-            endpoint_url=endpoint or None,
+            endpoint_url=self.endpoint or None,
             aws_access_key_id=access_key,
             aws_secret_access_key=secret_key,
             config=config,
@@ -68,7 +72,7 @@ class S3Storage:
     def save(self, file_storage) -> str:
         try:
             key = _unique_name(file_storage.filename)
-            
+
             # Reset file pointer to beginning before streaming to S3
             if hasattr(file_storage, "seek"):
                 file_storage.seek(0)
@@ -92,6 +96,14 @@ class S3Storage:
             raise StorageError("S3 deletion failed.") from exc
 
     def url_for(self, key: str, expires_in=3600) -> str:
+        # If using Supabase Storage, route directly to the public object URL
+        if "supabase.co" in self.endpoint:
+            base_url = self.endpoint
+            if base_url.endswith("/storage/v1/s3"):
+                base_url = base_url[:-len("/storage/v1/s3")]
+            return f"{base_url}/storage/v1/object/public/{self.bucket}/{key}"
+
+        # Standard S3 / R2 presigned URL generation
         try:
             return self.client.generate_presigned_url(
                 "get_object",
